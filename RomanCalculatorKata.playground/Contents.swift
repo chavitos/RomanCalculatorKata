@@ -1,0 +1,144 @@
+import UIKit
+import XCTest
+
+// A roman calculator that sum two roman numbers with string input   i.e. "XIV” + “LX” = “LXXIV"
+/*
+ Roman value:
+ I = 1
+ V = 5
+ X = 10
+ L = 50
+ C = 100
+ D = 500
+ M = 1_000
+ */
+
+/*
+ Rules to a Roman number:
+ 
+ Numerals can be concatenated to form a larger numeral (“XX” + “II” = “XXII”)
+ If a lesser numeral is put before a bigger it means subtraction of the lesser from the bigger (“IV” means four, “CM” means ninehundred)
+ If the numeral is I, X or C you can’t have more than three (“II” + “II” = “IV”)
+ If the numeral is V, L or D you can’t have more than one (“D” + “D” = “M”)
+ */
+
+class RomanCalculator {
+    let regexRules = "IIII+|XXXX+|CCCC+|VV+|LL+|DD+|IL|IC|ID|IM|VX|VL|VC|VD|VM|XD|XM|LC|LD|LM|DM"
+    let romanValues: [String: Int] = ["I": 1,
+                                      "V": 5,
+                                      "X": 10,
+                                      "L": 50,
+                                      "C": 100,
+                                      "D": 500,
+                                      "M": 1_000]
+    
+    func getNumericValue(of romanValue: String) -> Int {
+        if romanValue.count > 1 {
+            let value = self.parseCompositeValue(romanValue)
+            return value
+        }
+        return romanValues[romanValue] ?? 0
+    }
+    
+    private func parseCompositeValue(_ romanValue: String) -> Int {
+        if !isValidComposition(romanValue) {
+            return 0
+        }
+        
+        var amount = 0
+        var previousValue = 0
+        
+        for romanNumeral in romanValue {
+            let numericValue = self.getNumericValue(of: String(romanNumeral))
+
+            if previousValue > 0 {
+                if previousValue >= numericValue {
+                    amount += numericValue
+                } else {
+                    amount += numericValue - (2 * previousValue)
+                }
+            } else {
+                amount += numericValue
+            }
+            
+            previousValue = numericValue
+        }
+        
+        return amount
+    }
+    
+    private func isValidComposition(_ composition: String) -> Bool {
+        let regex = try! NSRegularExpression(pattern: regexRules)
+        let range = NSRange(location: 0, length: composition.utf16.count)
+        
+        return regex.firstMatch(in: composition, options: [], range: range) == nil
+    }
+}
+
+class KataTests: XCTestCase {
+    
+    var sut: RomanCalculator!
+    
+    override func setUp() {
+        super.setUp()
+        sut = RomanCalculator()
+    }
+    
+    override func tearDown() {
+        sut = nil
+        super.tearDown()
+    }
+    
+    func testRomanCalculator_convertSingleLetterInANumber() {
+        let value1 = sut.getNumericValue(of: "I")
+        XCTAssertEqual(1, value1)
+        
+        let value5 = sut.getNumericValue(of: "V")
+        XCTAssertEqual(5, value5)
+        
+        let value10 = sut.getNumericValue(of: "X")
+        XCTAssertEqual(10, value10)
+        
+        let value50 = sut.getNumericValue(of: "L")
+        XCTAssertEqual(50, value50)
+        
+        let value100 = sut.getNumericValue(of: "C")
+        XCTAssertEqual(100, value100)
+        
+        let value500 = sut.getNumericValue(of: "D")
+        XCTAssertEqual(500, value500)
+        
+        let value1000 = sut.getNumericValue(of: "M")
+        XCTAssertEqual(1_000, value1000)
+    }
+    
+    func testRomanCalculator_convertCompositeValueInANumber() {
+        let value1 = sut.getNumericValue(of: "IV")
+        XCTAssertEqual(4, value1)
+        let value2 = sut.getNumericValue(of: "IX")
+        XCTAssertEqual(9, value2)
+    }
+    
+    func testRomanCalculator_withThreeChars_convertCompositeValueInANumber() {
+        let value = sut.getNumericValue(of: "XXX")
+        XCTAssertEqual(30, value)
+    }
+    
+    func testRomanCalculator_withMoreThanThreeIXorC_returnZero() {
+        let valueI = sut.getNumericValue(of: "IIII")
+        XCTAssertEqual(0, valueI)
+        let valueX = sut.getNumericValue(of: "XXXXX")
+        XCTAssertEqual(0, valueX)
+        let valueC = sut.getNumericValue(of: "CCCC")
+        XCTAssertEqual(0, valueC)
+    }
+    
+    func testRomanCalculator_rulesAboutLesserNumeralBeforeBigger() {
+        let value1 = sut.getNumericValue(of: "XM")
+        XCTAssertEqual(0, value1)
+        let value2 = sut.getNumericValue(of: "IM")
+        XCTAssertEqual(0, value2)
+    }
+}
+
+KataTests.defaultTestSuite.run()
