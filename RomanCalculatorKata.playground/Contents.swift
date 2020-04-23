@@ -34,9 +34,10 @@ class RomanCalculator {
     
     func getNumericValue(of romanValue: String) -> Int {
         if romanValue.count > 1 {
-            let value = self.parseCompositeValue(romanValue)
+            let value = parseCompositeValue(romanValue)
             return value
         }
+        
         return romanValues[romanValue] ?? 0
     }
     
@@ -50,7 +51,7 @@ class RomanCalculator {
         
         for romanNumeral in romanValue {
             let numericValue = self.getNumericValue(of: String(romanNumeral))
-
+            
             if previousValue > 0 {
                 if previousValue >= numericValue {
                     amount += numericValue
@@ -72,6 +73,39 @@ class RomanCalculator {
         let range = NSRange(location: 0, length: composition.utf16.count)
         
         return regex.firstMatch(in: composition, options: [], range: range) == nil
+    }
+    
+    func getRomanNumeral(for value: Int) -> String {
+        var romanNumeral: String = ""
+        var remainingValue = value
+        
+        for (romanValue, numericValue) in romanValues.sorted(by: { $0.value > $1.value }) {
+            if value >= numericValue {
+                romanNumeral += romanValue
+                remainingValue -= numericValue
+                
+                if remainingValue > 0 {
+                    romanNumeral += getRomanNumeral(for: remainingValue)
+                }
+                
+                break
+            }
+        }
+        
+        return formatRomanNumeral(romanNumeral)
+    }
+    
+    private func formatRomanNumeral(_ romanNumeral: String) -> String {
+        let wrongPattern = ["IIII", "VIIII", "XXXX", "LXXXX", "CCCC", "DCCCC"]
+        let correctPattern = ["IV", "IX", "XL", "XC", "CD", "CM"]
+        var formattedValue = romanNumeral
+        
+        for index in stride(from: wrongPattern.count - 1, through: 0, by: -1) {
+            let regex = try! NSRegularExpression(pattern: wrongPattern[index], options: .caseInsensitive)
+            formattedValue = regex.stringByReplacingMatches(in: formattedValue, options: NSRegularExpression.MatchingOptions(rawValue: 0), range: NSMakeRange(0, formattedValue.count), withTemplate: correctPattern[index])
+        }
+        
+        return formattedValue
     }
 }
 
@@ -138,6 +172,26 @@ class KataTests: XCTestCase {
         XCTAssertEqual(0, value1)
         let value2 = sut.getNumericValue(of: "IM")
         XCTAssertEqual(0, value2)
+    }
+    
+    func testRomanCalculator_convertNumberOneInRomanNumeral() {
+        let value = sut.getRomanNumeral(for: 1)
+        XCTAssertEqual("I", value)
+    }
+    
+    func testRomanCalculator_convertNumberFiveInRomanNumeral() {
+        let value = sut.getRomanNumeral(for: 5)
+        XCTAssertEqual("V", value)
+    }
+    
+    func testRomanCalculator_convertNumberFourInRomanNumeral() {
+        let value = sut.getRomanNumeral(for: 4)
+        XCTAssertEqual("IV", value)
+    }
+    
+    func testRomanCalculator_convertNumberThirtyInRomanNumeral() {
+        let value = sut.getRomanNumeral(for: 30)
+        XCTAssertEqual("XXX", value)
     }
 }
 
