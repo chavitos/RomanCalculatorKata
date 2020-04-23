@@ -23,7 +23,6 @@ import XCTest
  */
 
 class RomanCalculator {
-    let regexRules = "IIII+|XXXX+|CCCC+|VV+|LL+|DD+|IL|IC|ID|IM|VX|VL|VC|VD|VM|XD|XM|LC|LD|LM|DM"
     let romanValues: [String: Int] = ["I": 1,
                                       "V": 5,
                                       "X": 10,
@@ -31,6 +30,14 @@ class RomanCalculator {
                                       "C": 100,
                                       "D": 500,
                                       "M": 1_000]
+    
+    func sum(_ romanNumeral1: String, _ romanNuemral2: String) -> String {
+        let value1 = getNumericValue(of: romanNumeral1)
+        let value2 = getNumericValue(of: romanNuemral2)
+        let result = value1 + value2
+        
+        return getRomanNumeral(for: result)
+    }
     
     func getNumericValue(of romanValue: String) -> Int {
         if romanValue.count > 1 {
@@ -69,13 +76,14 @@ class RomanCalculator {
     }
     
     private func isValidComposition(_ composition: String) -> Bool {
+        let regexRules = "IIII+|XXXX+|CCCC+|VV+|LL+|DD+|IL|IC|ID|IM|VX|VL|VC|VD|VM|XD|XM|LC|LD|LM|DM"
         let regex = try! NSRegularExpression(pattern: regexRules)
         let range = NSRange(location: 0, length: composition.utf16.count)
         
         return regex.firstMatch(in: composition, options: [], range: range) == nil
     }
     
-    func getRomanNumeral(for value: Int) -> String {
+    func getRomanNumeral(for value: Int, formatResult: Bool = true) -> String {
         var romanNumeral: String = ""
         var remainingValue = value
         
@@ -85,14 +93,14 @@ class RomanCalculator {
                 remainingValue -= numericValue
                 
                 if remainingValue > 0 {
-                    romanNumeral += getRomanNumeral(for: remainingValue)
+                    romanNumeral += getRomanNumeral(for: remainingValue, formatResult: false)
                 }
                 
                 break
             }
         }
         
-        return formatRomanNumeral(romanNumeral)
+        return formatResult ? formatRomanNumeral(romanNumeral) : romanNumeral
     }
     
     private func formatRomanNumeral(_ romanNumeral: String) -> String {
@@ -189,9 +197,22 @@ class KataTests: XCTestCase {
         XCTAssertEqual("IV", value)
     }
     
+    func testRomanCalculator_convertNumberNineInRomanNumeral() {
+        let value = sut.getRomanNumeral(for: 9)
+        XCTAssertEqual("IX", value)
+    }
+    
     func testRomanCalculator_convertNumberThirtyInRomanNumeral() {
         let value = sut.getRomanNumeral(for: 30)
         XCTAssertEqual("XXX", value)
+    }
+    
+    func testRomanCalculator_sumTwoRomanNumerals() {
+        let result1 = sut.sum("I", "I")
+        XCTAssertEqual("II", result1)
+        
+        let result2 = sut.sum("IV", "V")
+        XCTAssertEqual("IX", result2)
     }
 }
 
